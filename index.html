@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HoselisAI - Darmowe AI</title>
+    <style>
+        /* Tło wideo */
+        #bg-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1; /* Ustawienie wideo poniżej zawartości strony */
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+
+        .chat-container {
+            width: 90%;
+            max-width: 600px;
+            border-radius: 8px;
+            background-color: rgba(30, 30, 30, 0.8); /* Przezroczystość tła */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 80%;
+        }
+
+        .chat-header {
+            font-size: 32px; /* Powiększamy rozmiar czcionki */
+            margin-bottom: 10px;
+            color: #fff;
+            text-align: center;
+            font-weight: bold; /* Pogrubienie tekstu */
+            font-family: 'SEPARAT', sans-serif; /* Kwadratowa czcionka (monospace) */
+            letter-spacing: 2px; /* Dodatkowa przestrzeń między literami */
+        }
+
+        .chat-box {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #2a2a2a;
+            color: #e0e0e0;
+            margin-bottom: 10px;
+        }
+
+        .chat-box .message {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .chat-box .message.user {
+            text-align: right;
+            background-color: #333;
+            border-radius: 8px;
+            color: #ffffff;
+            padding: 8px;
+        }
+
+        .chat-box .message.bot {
+            text-align: left;
+            background-color: #444;
+            border-radius: 8px;
+            color: #ffffff;
+            padding: 8px;
+        }
+
+        .chat-box .message .emoji {
+            font-size: 1.5em;
+            margin-right: 8px;
+            color: #f0f0f0;
+        }
+
+        .thinking {
+            color: #f0f0f0;
+            font-size: 18px;
+            display: inline-block;
+            animation: typing 1.5s infinite;
+        }
+
+        @keyframes typing {
+            0% { content: "."; }
+            25% { content: ".."; }
+            50% { content: "..."; }
+            75% { content: ".."; }
+            100% { content: "."; }
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            font-size: 16px;
+            background-color: #333;
+            color: #e0e0e0;
+        }
+
+        .send-btn {
+            padding: 10px 20px;
+            background-color: white; /* Białe tło */
+            color: black; /* Czarny tekst */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s ease;
+        }
+
+        .send-btn:hover {
+            background-color: #f0f0f0; /* Jasnoszare tło po najechaniu */
+        }
+
+        /* Zmiana przycisku po wysłaniu */
+        .send-btn.disabled {
+            background: linear-gradient(45deg, #888, #ccc);
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #ffffff;
+        }
+
+        /* Animacja pisania bota */
+        .bot .typing {
+            display: inline-block;
+            overflow: hidden;
+            width: 0;
+            white-space: nowrap;
+            animation: typing 2s steps(30) forwards; /* 30 kroków dla 30 liter */
+        }
+
+        /* Definicja animacji */
+        @keyframes typing {
+            from {
+                width: 0;
+            }
+            to {
+                width: 100%;
+            }
+        }
+
+        /* Styl przycisku "Co umiem" w prawym górnym rogu */
+        .skills-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .skills-btn:hover {
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .skills-btn:focus {
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Tło wideo -->
+    <video autoplay muted loop id="bg-video">
+        <source src="your-video-file.mp4" type="video/mp4">
+        Twoja przeglądarka nie obsługuje wideo.
+    </video>
+
+    <div class="chat-container">
+        <div class="chat-header">HoselisAI</div>
+        <div class="chat-box" id="chat-box"></div>
+        <div class="chat-input">
+            <input type="text" id="user-input" class="input-field" placeholder="Wpisz pytanie..." />
+            <button class="send-btn" id="send-btn" onclick="sendMessage()">Wyślij</button>
+        </div>
+    </div>
+
+    <!-- Przycisk "Co umiem" -->
+    <button id="skills-btn" class="skills-btn">Co umiem</button>
+
+    <script>
+        // Funkcja dodająca wiadomość użytkownika
+        function addUserMessage(message) {
+            const chatBox = document.getElementById('chat-box');
+            const userMessage = document.createElement('div');
+            userMessage.classList.add('message', 'user');
+            userMessage.innerHTML = '<span class="emoji">👤</span>' + message; // Emotka człowieka przed wiadomością
+            chatBox.appendChild(userMessage);
+        }
+
+        // Funkcja dodająca odpowiedź bota z animacją pisania
+        function addBotMessage(message) {
+            const chatBox = document.getElementById('chat-box');
+            const botMessage = document.createElement('div');
+            botMessage.classList.add('message', 'bot');
+            botMessage.innerHTML = '<span class="emoji">🤖</span><span class="typing">' + message + '</span>'; // Tekst bota z animacją
+            chatBox.appendChild(botMessage);
+
+            // Animacja po załadowaniu strony
+            const typingElement = botMessage.querySelector('.typing');
+            typingElement.style.animation = `typing ${message.length * 0.1}s steps(${message.length}) forwards`;
+        }
+
+        // Funkcja generująca odpowiedzi bota
+        function generateBotResponse(userMessage) {
+            const responses = [
+                {
+                    keywords: ["cześć", "hej", "witaj", "dzień dobry"],
+                    response: "Cześć! Jak mogę Ci dzisiaj pomóc?"
+                },
+                {
+                    keywords: ["jak się masz", "co u ciebie", "jak tam"],
+                    response: "Dzięki za zapytanie! Działam świetnie. A jak Ty?"
+                },
+                {
+                    keywords: ["co potrafisz", "co robisz", "czym się zajmujesz"],
+                    response: "Jestem AI, umiem matematykę"
+                },
+                {
+                    keywords: ["jaki dzień", "data", "co za dzień"],
+                    response: `Dziś jest ${new Date().toLocaleDateString('pl-PL')}.`
+                },
+                {
+                    keywords: ["dziękuję", "dzięki", "dzięki za pomoc"],
+                    response: "Nie ma sprawy! Jeśli będziesz miał jeszcze jakieś pytania, śmiało pisz."
+                },
+                {
+                    keywords: ["do widzenia", "pa", "żegnaj"],
+                    response: "Do zobaczenia! Miłego dnia!"
+                },
+                {
+                    keywords: ["kalkulator", "oblicz", "policz"],
+                    response: "Wpisz działanie matematyczne, a ja je obliczę."
+                }
+            ];
+
+            // Sprawdzanie, czy użytkownik prosi o kalkulator
+            if (/[\d\+\-\*\/\^\(\)\.]+/.test(userMessage)) {
+                try {
+                    const result = eval(userMessage);  // Obliczamy wynik
+                    return `Równanie: ${userMessage} = ${result}`;
+                } catch (e) {
+                    return "Nie udało się obliczyć tego równania. Spróbuj ponownie.";
+                }
+            }
+
+            // Szukanie odpowiedzi na podstawie słów kluczowych w wiadomości użytkownika
+            for (const item of responses) {
+                for (const keyword of item.keywords) {
+                    if (userMessage.toLowerCase().includes(keyword)) {
+                        return item.response;
+                    }
+                }
+            }
+
+            // Domyślna odpowiedź, gdy brak dopasowania
+            return "Przepraszam, to nie znajduję się w mojej bazie danych!";
+        }
+
+        // Funkcja wysyłania wiadomości
+        function sendMessage() {
+            const userInput = document.getElementById('user-input').value.trim();
+            if (userInput) {
+                // Zablokuj możliwość pisania i wyślij
+                document.getElementById('user-input').disabled = true;
+                document.querySelector('.send-btn').disabled = true;
+                document.getElementById('send-btn').classList.add('disabled');
+                document.getElementById('send-btn').textContent = 'Czekaj...';
+                
+                // Zmień tekst w polu na "Poczekaj na odpowiedź"
+                document.getElementById('user-input').placeholder = "Poczekaj na odpowiedź...";
+
+                // Dodaj wiadomość użytkownika do chatu
+                addUserMessage(userInput);
+
+                // Wyczyść pole tekstowe
+                document.getElementById('user-input').value = '';
+
+                // Dodaj animację myślenia
+                const chatBox = document.getElementById('chat-box');
+                const thinkingMessage = document.createElement('div');
+                thinkingMessage.classList.add('message', 'bot');
+                thinkingMessage.innerHTML = '<span class="emoji">🤖</span><span class="thinking">Myślę...</span>';
+                chatBox.appendChild(thinkingMessage);
+
+                // Po 3 sekundach usuń animację myślenia i dodaj odpowiedź
+                setTimeout(() => {
+                    chatBox.removeChild(thinkingMessage);  // Usuwamy wiadomość "Myślę..."
+                    const botResponse = generateBotResponse(userInput);
+                    addBotMessage(botResponse);  // Dodajemy odpowiedź bota
+
+                    // Ponownie włącz pole tekstowe, przywróć placeholder i przywróć przycisk
+                    document.getElementById('user-input').disabled = false;
+                    document.querySelector('.send-btn').disabled = false;
+                    document.getElementById('user-input').placeholder = "Wpisz pytanie...";
+                    document.getElementById('send-btn').classList.remove('disabled');
+                    document.getElementById('send-btn').textContent = 'Wyślij';
+                }, 3000);
+            }
+        }
+
+        // Funkcja uruchamiająca wiadomość powitalną po załadowaniu strony
+        window.onload = function() {
+            addBotMessage("Witaj, w czym mogę dzisiaj ci pomóc?");
+        }
+
+        // Obsługuje naciśnięcie klawisza Enter do wysyłania wiadomości
+        document.getElementById('user-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Funkcja wysyłająca wiadomość "co potrafisz" po kliknięciu przycisku
+        document.getElementById('skills-btn').addEventListener('click', function() {
+            // Wyślij wiadomość "co potrafisz" do bota
+            const userMessage = "co potrafisz";
+            addUserMessage(userMessage);
+
+            // Wyczyść pole tekstowe
+            document.getElementById('user-input').value = '';
+
+            // Zablokuj możliwość wysyłania wiadomości przez użytkownika
+            document.getElementById('user-input').disabled = true;
+            document.querySelector('.send-btn').disabled = true;
+            document.getElementById('send-btn').classList.add('disabled');
+            document.getElementById('send-btn').textContent = 'Czekaj...';
+
+            // Dodaj animację myślenia
+            const chatBox = document.getElementById('chat-box');
+            const thinkingMessage = document.createElement('div');
+            thinkingMessage.classList.add('message', 'bot');
+            thinkingMessage.innerHTML = '<span class="emoji">🤖</span><span class="thinking">Myślę...</span>';
+            chatBox.appendChild(thinkingMessage);
+
+            // Po 3 sekundach usuń animację myślenia i dodaj odpowiedź
+            setTimeout(() => {
+                chatBox.removeChild(thinkingMessage);  // Usuwamy wiadomość "Myślę..."
+                const botResponse = generateBotResponse(userMessage);
+                addBotMessage(botResponse);  // Dodajemy odpowiedź bota
+
+                // Ponownie włącz pole tekstowe, przywróć placeholder i przywróć przycisk
+                document.getElementById('user-input').disabled = false;
+                document.querySelector('.send-btn').disabled = false;
+                document.getElementById('user-input').placeholder = "Wpisz pytanie...";
+                document.getElementById('send-btn').classList.remove('disabled');
+                document.getElementById('send-btn').textContent = 'Wyślij';
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
